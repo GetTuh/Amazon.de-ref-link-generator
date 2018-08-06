@@ -3,6 +3,7 @@ This app gets listings from amazon.de and processes it adding automatically ref 
 
 
 Try it out! https://gettuh.github.io/Projects/Amazon_scraper.html
+
 Usage: 
 1. Create sheet (Optional: fill out tracking ID, post_autor and Post_category)
 2. Visit https://www.amazon.de/
