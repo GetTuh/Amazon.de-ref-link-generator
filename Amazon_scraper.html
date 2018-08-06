@@ -1,0 +1,710 @@
+
+<html><head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+  <script type="text/javascript" src="//code.jquery.com/jquery-1.8.3.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://necolas.github.io/normalize.css/7.0.0/normalize.css"> 
+    <link rel="stylesheet" type="text/css" href="/css/result-light.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/alasql/0.2/alasql.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.7.12/xlsx.core.min.js"></script>
+  <style type="text/css">
+    body {
+    font-size: 12pt;
+    font-family: Calibri;
+    padding : 10px;
+	margin: 0;
+}
+.loadedtext{
+  color:green;
+
+
+
+}
+
+
+
+.loadingtext{
+    color:blue;
+ /*   position: fixed;
+    font-size: 20px;
+    top: 40%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%) ;*/
+}
+.waiter {
+    border: 10px solid #f3f3f3; /* Light grey */
+    border-top: 10px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 2s linear infinite;
+ /*   position: absolute;
+    top: 55%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%) ;*/
+  /*  position: absolute;
+    left: 48%;
+    top:10%;*/
+}
+
+.appExcel {
+  position: relative;
+}
+/*.tabelawpisywanie{
+  position: relative;
+  left: 400px;
+}*/
+.loadinger {
+    border: 10px solid #f3f3f3; /* Light grey */
+    border-top: 10px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.loading {
+  display: none;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.3);
+  z-index: 99;  
+  top: 0;
+  left: 0;
+}
+.loading .load-img {
+  width: 50px;
+  height: 50px;
+  margin: auto;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: url('https://mir-s3-cdn-cf.behance.net/project_modules/disp/585d0331234507.564a1d239ac5e.gif') scroll no-repeat center;
+  background-size: 100% 100%;
+}
+.loading button {
+width: 100px;
+height: 35px;
+margin: auto;
+position: fixed;
+top: 36%;
+left: 0;
+bottom: 0;
+right: 0;
+}
+
+table,th,td {
+    border: 1px solid black;   
+    border-collapse: collapse;	
+}
+table {
+    display: none;
+}
+table.active{
+  display: table;
+}
+th {  
+    padding: 5px;
+    background-color:grey;
+    color: white;
+}
+td {  
+    padding: 5px;
+}
+input {
+    font-size: 12pt;
+    font-family: Calibri;
+}
+.sheets {
+  margin: 10px auto;
+}
+select,input[type="text"] {
+  padding: 5px 10px;
+}
+input[type="text"] {
+	min-width: 300px;
+}
+#import,imput[type="button"] {
+  position: relative;
+  display: inline-block;
+  background: #e0e0e0;
+  border: 1px solid #ADADAD;
+  padding: 2px 10px;  
+  text-align: center;
+  cursor: pointer;
+}
+#import input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  z-index: 99;
+  top:0;
+  left: 0;
+}
+#import span {
+  position: relative;
+  top:0;
+  left: 0;
+  z-index:  98;
+  diplay: block;
+}
+</style>
+<title>Export table data to Excel using jQuery</title>
+<script type="text/javascript">//<![CDATA[
+
+
+   var counter =0;
+
+
+$(function(){
+var data=localStorage.getItem('data')?JSON.parse(localStorage.getItem('data')):{};
+var current_sheet="test";
+var xhr;
+
+
+
+var proxy=[
+//"http://cors-proxy.htmldriven.com/?url=",
+"https://cors-anywhere.herokuapp.com/",
+"https://cross-proxy-1.herokuapp.com/",
+"https://cross-proxy-2.herokuapp.com/"
+];
+function setData(data){
+if(typeof data!='object'){
+data={};
+localStorage.removeItem('data');
+}
+localStorage.setItem('data',JSON.stringify(data));
+}
+function rebuildHtml(){
+	$('#sheets').html('');
+  $('#dvData').html('');
+	var empty=true;
+	Object.keys(data).forEach(function(sheetid){
+  add_sheet(sheetid,data[sheetid]);
+ 
+  empty=false;
+  });
+  if(empty){
+  $('#sheets').append('<option id="no-sheet">No sheet found</option>');
+  }
+}
+
+  var tytuly = [];
+
+
+function add_link(table_id,item){
+  counter++;
+  var bcoderegex = /B0+[0-9a-zA-Z]{8}/; 
+  var titleregex = /(?=(?<=de\/).*)([^\/]*)/;
+  var trackiID = document.getElementById("inputtrackID").value;
+  var post_autor = document.getElementById("post_autor").value;
+  var Post_category = document.getElementById("Post_category").value;
+  item.link = item.link.toString();
+  var bcode = 'DE,https://www.amazon.de/gp/product/'+(item.link).match(bcoderegex)+'/?tag='+(trackiID);
+  var title1 = (item.link).match(titleregex);
+  var title2 = title1.toString().replace(/-/g, " ");
+  var title3 = title2.toString().match(/.+?(?=,)/);
+  var titlea = title3.toString().replace(/%C3%A4/g, "ä");
+  var titleu = titlea.toString().replace(/%C3%BC/g, "ü");
+  var titleo = titleu.toString().replace(/%C3%B6/g, "ö");
+  var titleb = titleo.toString().replace(/%C3%9F/g, "ß");
+  var nametitle = titleb.toString().replace(/%C3%A0/g,"à");
+
+  tytuly.push(nametitle);
+ // document.getElementById("testt").innerHTML=tytuly;
+  var post_tags = nametitle.toString().replace(/ /g, ",");
+  if((nametitle=="dp")||nametitle=="gp"){
+    nametitle = "No title";
+  }
+
+	 $('#'+table_id).append('<tr><td>'+(counter)+'</td><td>'+(nametitle)+'</td><td>'+item.link+'</td><td>'+item.image_link+'</td><td>'+(bcode)+'</td><td>'+(post_autor)+'</td><td>'+(Post_category)+'</td><td>'+(post_tags)+'</td></tr>');
+   if(!data[current_sheet]){
+   data[current_sheet]=[];
+   }
+   data[current_sheet].push({"ID":(counter),"Title":(nametitle),"Please enter amazon link":item.link,"automaticly show image fullsize link": item.image_link,"Affiliate URL with tracking-ID":(bcode),"post_autor":(post_autor),"Post_category":(Post_category),"post_tags":(post_tags),});
+   setData(data);   
+
+}
+
+var try_get=0;
+
+document.getElementById ("linki").addEventListener ("click", multipleLinks, false);
+
+
+var howmuch=0;
+function notfound(){
+howmuch++;
+
+document.getElementById("errorbox").innerHTML = ("<p class=\"errorinfo\">Failed pages: "+howmuch+" </p>");
+
+
+}
+
+
+
+
+function multipleLinks(){
+  var loadinginfo = "<center><p class=\"waiter\"></p> <p class=\"loadingtext\"><b>Processing... might take a while. Please wait!</p> </b></center>";
+
+
+
+  var taklink = document.getElementById("Mlink").value;
+    document.getElementById("loadinginfo").innerHTML = (loadinginfo);
+if(/[a][m][a][z][o][n][.][d][e][\/]s[\/]/.test(taklink)==false&&(/[a][m][a][z][o][n][.][d][e][\/][g][p][\/]/.test(taklink)==false)){
+    alert("link is wrong!");
+
+    document.getElementById("loadinginfo").innerHTML = (" ");
+    return;
+  }
+  if(/[a][m][a][z][o][n][.][d][e][\/][g][p][\/]product/.test(taklink)==true){
+    alert("You added single item into list bar");
+
+    document.getElementById("loadinginfo").innerHTML = (" ");
+    return;
+  }
+    if(!$('#dvData table').length){
+    alert('Please add sheet first');
+    document.getElementById("loadinginfo").innerHTML = (" ");
+    return;  
+    }
+          if(taklink.length == 0) {
+          document.getElementById("loadinginfo").innerHTML = (" ");
+            alert("The search link is empty");
+        }
+
+var random=Math.floor(Math.random()*proxy.length);
+var proxy_url=proxy[random];
+xhr=$.ajax({
+      url: proxy_url+taklink,
+      success: function(html){
+
+      //  document.getElementById("testt").innerHTML=html;
+       if(/[a][m][a][z][o][n][.][d][e][\/]s[\/]/.test(taklink)==true){
+
+      //  var linki = html.match(/(?=(?<=<a class="a-size-small a-link-normal a-text-normal" href=").*).+?(?=ref)/g);
+       var first = html.match(/(?=(?<=<a class="a-size-small a-link-normal a-text-normal" href=").*).+?(?=ref)/g);
+        var second = html.match(/(?=(?<=<a class="a-link-normal a-text-normal" href=").*).+?(?=ref)/g);
+    linki=first+second;
+                    linki = linki.toString();
+                       
+                     var commas = linki.match(/,/g);
+                    var nexturl =commas.length;
+
+                    for (nexturl;nexturl!=0;nexturl--){
+                      var jedenlink = linki.match(/.+?(?=,)/);
+                      var linki = linki.replace(/[^,]*./,"") ;
+
+
+                      getLink(jedenlink);
+
+                    }
+
+
+
+
+       document.getElementById("loadinginfo").innerHTML = ("<a class=\"loadedtext\"><b>Finished successfully! </b></a> Filling the table...");
+       
+     }
+       else if((/[a][m][a][z][o][n][.][d][e][\/][g][p][\/]/.test(taklink)==true)){
+
+                 var linki = html.match(/(?=(?<=<a class="a-link-normal" href=").*).+?(?=ref)/g);
+       /*                  var first = html.match(/(?=(?<=<a class="a-size-small a-link-normal a-text-normal" href=").*).+?(?=ref)/g);
+        var second = html.match(/(?=(?<=<a class="a-link-normal a-text-normal" href=").*).+?(?=ref)/g);
+    linki=first+"https://www.amazon.de"+second;*/
+                    linki = linki.toString();
+
+                     var commas = linki.match(/,/g);
+                    var nexturl =commas.length;
+
+                 linki = linki.replace(/,/g,",https://www.amazon.de") ;
+
+                    for (nexturl;nexturl!=0;nexturl--){
+                      var jedenlink = linki.match(/.+?(?=,)/);
+                      var linki = linki.replace(/[^,]*./,"") ;
+
+
+                      getLink(jedenlink);
+
+        }   document.getElementById("loadinginfo").innerHTML = ("<a class=\"loadedtext\"><b>Finished successfully! </b></a> Filling the table...");}else
+
+        {
+            document.getElementById("loadinginfo").innerHTML = (" ");
+            alert("The search link is wrong :)");
+            
+}
+        } 
+})
+}
+
+
+
+function getLink(link){
+var random=Math.floor(Math.random()*proxy.length);
+var proxy_url=proxy[random];
+xhr=$.ajax({
+    	url: proxy_url+link,
+      success: function(html){
+
+      	var $html=$(html);
+        var img=$html.find('[data-old-hires]');
+        var image_link; 
+        if(img.length&&img.attr('data-old-hires')!=""){
+        	image_link=img.attr('data-old-hires');
+        }else{        	
+          var large=$html.text().match(/\"large\":\"https:\/\/(.+?)\.jpg/g);         
+          if(large&&large.length){
+          	image_link=large[0].replace('"large":"','');
+          }          
+        }  
+        if(image_link){
+                add_link(current_sheet,{link: link,image_link: image_link});
+				  $('#link').val('');      
+		$('.loading').hide();
+        }
+				else{
+					if(try_get>=proxy.length){
+            notfound();
+            console.log(link);
+			//		alert('Can not find hires or large image! Please try again');
+					  $('#link').val('');      
+		$('.loading').hide();
+					}else{ 
+					try_get++;
+					getLink(link);
+				}        	
+        }      
+      },
+      error: function(error){      				
+			if(!xhr.statusText === 'abort'){
+			$('#link').val('');
+			$('#get_img').text('Get Image');
+    		$('.loading').hide();
+			}      	
+      }
+});
+}
+$('#get_img').click(function(e){
+		if(!$('#dvData table').length){
+    alert('Please add sheet first');
+    $('.loading').hide();
+    return;    
+    }
+		e.preventDefault();    
+    $('.loading').show();
+    var link=$('#link').val();
+    if(link===''||link.indexOf('https://www.amazon.de/')!=0){
+    	alert('Please check the link! Link may be empty or not a amazon link!');
+      $('.loading').hide();
+      return;
+    }  
+    var check_exist=checkDouble(link);
+    if(check_exist.error!=0){
+    alert(check_exist.msg);
+    $('.loading').hide();
+    $('#link').val('');
+    return;
+    }
+    getLink(link);
+});
+$('#link').on('keyup',function(e){
+console.log(e.keyCode);
+	if(e.keyCode==86){
+	if(!$('#dvData table').length){
+    alert('Please add sheet first');
+    $('.loading').hide();
+    return;    
+    }		 
+    $('.loading').show();
+    var link=$(this).val();
+    if(link===''||link.indexOf('https://www.amazon.de/')!=0){
+    	alert('Please check the link! Link may be empty or not a amazon link!');
+      $('.loading').hide();
+      return;
+    }  
+    var check_exist=checkDouble(link);
+    if(check_exist.error!=0){
+    alert(check_exist.msg);
+    $('.loading').hide();
+    $('#link').val('');
+    return;
+    }
+    getLink(link);
+	}
+	
+});
+$('#btnExport').click(function(e){
+	exportToExcel();
+});
+$('#btnExportCSV').click(function(e){
+exportToCSV();
+});
+$('#sheets').change(function(e){
+if($('#'+$(this).val()).length){
+	$('#dvData table').removeClass('active');
+  $('#'+$(this).val()).addClass('active');
+  current_sheet=$(this).val();
+}
+});
+function add_sheet(sheetid,dataIn){
+
+if(sheetid&&sheetid!=""&&!$('#'+sheetid).length){
+   $('#no-sheet').remove();
+  $('#sheets').append('<option value="'+sheetid+'" selected >'+sheetid+'</option>');  
+  $('#dvData table').removeClass('active');
+  var table='<table id="'+sheetid+'" class="active"><tr><th>ID</th><th>Title</th><th>Please enter amazon link</th><th>automaticly show image fullsize link</th><th>Affiliate URL with tracking-ID</th><th>post_autor</th><th>Post_category</th><th>post_tags</th></tr>';
+  if(dataIn&&dataIn.length>0){  
+  dataIn.forEach(function(item){
+  table+="<tr><td>"+item['Title']+"</td><td>"+item['Please enter amazon link']+"</td><td>"+item['automaticly show image fullsize link']+"</td><td>"+item['Affiliate URL with tracking-ID']+"</td><td>"+item["post_autor"]+"</td><td>"+item["Post_category"]+"</td><td>"+item["post_tags"]+"</td></tr>";
+  });
+  }else{
+  data[sheetid]=[];
+  }
+  table+="</table>";
+  $('#dvData').append(table);
+  current_sheet=sheetid; 
+  setData(data);
+  }else{
+  alert('Error: sheet name is empty or sheet exist!');
+  }
+}
+$('#add_sheet').click(function(e){
+	var now=new Date();
+  var today=now.getDate()<10?'0'+now.getDate():now.getDate();
+  today+='-'+((now.getMonth()+1)<10?'0'+(now.getMonth()+1):(now.getMonth()+1));
+  today+='-'+now.getFullYear();
+	var sheetid=prompt('Enter sheet name',today);
+  if(sheetid&&sheetid.indexOf('.')>-1){
+  alert('Do not use dot(.) in sheet name, Thanks!');
+  return;
+  }
+  if(sheetid&&sheetid!=''){
+   add_sheet(sheetid);
+  } 
+});
+$('#btnClear').click(function(e){
+if(confirm('Are you sure to clear all data?')){
+localStorage.removeItem('data');
+data=[];
+rebuildHtml();
+alert('All data clear');
+}
+});
+$('#btnCancel').click(function(e){
+if(xhr){
+xhr.abort();
+$('.loading').hide();
+}
+});
+function to_json(workbook) {
+	var result = {};
+	workbook.SheetNames.forEach(function(sheetName) {
+		var roa = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
+		if(roa.length > 0){
+			result[sheetName] = roa;
+		}
+	});
+	return result;
+}
+$('#excel_file').click(function(e){
+$(this).val('');
+});
+$('#excel_file').change(function(e){
+if(confirm('Import will clear all current data, Are you sure?')){
+	var rABS = true;
+  var files = e.target.files;
+  var i,f;
+  for (i = 0; i != files.length; ++i) {
+    f = files[i];
+    var reader = new FileReader();
+    var name = f.name;
+    reader.onload = function(e) {
+      var data_file = e.target.result;
+     	var workbook;
+      if(rABS) {
+        /* if binary string, read with type 'binary' */
+        workbook = XLSX.read(data_file, {type: 'binary'});
+      } else {
+        /* if array buffer, convert to base64 */
+        var arr = fixdata(data_file);
+        workbook = XLSX.read(btoa(arr), {type: 'base64'});
+      }
+      data=to_json(workbook);
+      setData(data);        
+      rebuildHtml();
+    };   
+    reader.readAsBinaryString(f);
+};
+}	
+});
+function jsonToCSV(data){
+var headers=['post_name','post_type','post_title','post_title','post_content'];
+var data_csv=[];
+data.forEach(function(item,index){
+data_csv.push({	
+	"post_type":"post",
+  "post_title": item["Title"],
+  "post_thumbnail": item['automaticly show image fullsize link'],
+	"post_status": "draft",
+  "post_autor":item["post_autor"],
+  "Post_category":item["Post_category"],
+  "post_tags":item["post_tags"],
+  "custom_field_key":item["Affiliate URL with tracking-ID"],
+});
+});
+try{
+  var res = alasql('SELECT * INTO CSV("listLink.csv",{headers:true,separator:","}) FROM ?',[data_csv],
+      function(){
+        //done();
+      });
+  }
+ catch(e){
+ console.error(e,data);
+ alert('All sheet need have data to export. If sheet is empty please remove first');
+ }
+}
+function exportToCSV(){
+var datas=[];
+  var opts=[];
+  keys=Object.keys(data);
+  keys.forEach(function(item,index){  	
+  	datas=datas.concat(data[item]);
+    //opts.push({sheetid: item,header: true});
+  });
+  if(datas.length==0){
+  alert('No data to export');
+  return;
+  }
+  jsonToCSV(datas);
+}
+$('#export_sheet').click(function(e){
+jsonToCSV(data[current_sheet]);
+});
+function exportToExcel(){
+	var datas=[];
+  var opts=[];
+  keys=Object.keys(data);
+  keys.forEach(function(item,index){  	
+  	datas.push(data[item]);
+    opts.push({sheetid: item,header: true});
+  });
+  if(datas.length==0){
+  alert('No data to export');
+  return;
+  }
+  try{
+  var res = alasql('SELECT INTO XLSX("listLink.xlsx",?) FROM ?',[opts,datas],
+      function(){
+        //done();
+      });
+  }
+ catch(e){
+ alert('All sheet need have data to export. If sheet is empty please remove first');
+ }
+}
+function checkDouble(link){
+	var ret_val= {
+  	error: 0,
+    msg: 'No error'
+  };
+  Object.keys(data).forEach(function(sheetid){
+  	data[sheetid].forEach(function(item,index){
+    if(createStandarLink(link)===createStandarLink(item['Please enter amazon link'])){
+    	ret_val.error=1;
+      ret_val.msg="Can not add link because link exist on sheet ["+sheetid+"] item: "+(index+1);
+      return;
+    }
+    });
+  });
+  return ret_val;
+};
+function createStandarLink(link){
+	return link.replace(/ref=.*/,'');
+}
+
+
+$('#remove_sheet').click(function(e){
+if(confirm('Are you sure remove sheet ['+current_sheet+']')){
+delete data[current_sheet];
+setData(data);
+try{
+current_sheet=$('#sheets option').eq(0).val();
+}catch(e){
+
+
+
+}
+rebuildHtml();
+}
+});
+rebuildHtml();
+});//]]> 
+
+
+</script>
+
+  
+</head>
+
+<body>
+  <div class="appExcel">
+<div class="loading" title="loading">
+<div class="load-img"></div>
+<button id='btnCancel'>Cancel</button>
+</div>
+<div id="import">
+<input accept=".xlsx" id="excel_file" name="excel_file" type="file">
+<span>Import from excel file</span>
+</div>
+<input id="btnExport" value=" Export Table data into Excel " type="button">
+<input id="btnExportCSV" value=" Export Table data into CSV" type="button">
+<input id="btnClear" value=" Clear all data " type="button">
+<br>
+<br>
+<div style="margin: 10px auto;">
+    <input id="link" placeholder="Enter amazone link" type="text">
+
+    <button id="get_img">
+    Get Image   
+    </button><a class="tabelawpisywanie">
+    <b>Get multiple items:  </b><input type="text" placeholder="Enter search link" id="Mlink"><button id="linki">Get lists!</button> </a>
+    </div>
+
+<div style="margin: 10px auto;">
+      <input type="text" id="inputtrackID" placeholder="Enter your tracking ID">
+      <b>      post_autor: <input type="text" id="post_autor" placeholder="Enter autor"> Post_category: <input type="text" id="Post_category" placeholder="Enter category">
+    </div>
+    <div class="sheets">
+Select sheet: <select id="sheets"><option id="no-sheet">No sheet found</option></select>
+<button id="add_sheet" type="button">
+add sheet
+</button>
+<button id="remove_sheet">
+remove curent sheet
+</button>
+<button id="export_sheet">
+Export to CSV
+</button>
+</div>
+<center><a id="loadinginfo"></a></center>
+ <div id="errorbox"></div>
+<div id="testt"></div>
+<br><br>
+<div id="dvData"></div>
+</div>
+<div class="loader"></div>
+
+
+
+</body></html>
